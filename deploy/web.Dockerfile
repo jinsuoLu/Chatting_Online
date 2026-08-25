@@ -3,6 +3,7 @@ RUN corepack enable
 WORKDIR /app
 ARG NEXT_PUBLIC_API_BASE_URL
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NODE_OPTIONS=--max-old-space-size=4096
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter @chatting/web build
 FROM node:22-alpine
