@@ -1,0 +1,1 @@
+'use client';import{Shell,State}from'../ui';export default function P(){return <Shell title="聊天室管理"><div className="toolbar"><a className="button" href="/admin/rooms/create">新建聊天室</a><a className="button" href="/admin/rooms/batch">批量创建</a></div><section className="panel"><State empty/><p>聊天室列表将在 API 接入后展示。</p></section></Shell>}
