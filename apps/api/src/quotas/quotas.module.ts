@@ -1,3 +1,2 @@
-import { Module } from '@nestjs/common'; import { QuotasService } from './quotas.service.js'; import { QuotasController } from './quotas.controller.js'; import { PrismaService } from '../prisma.service.js';
-@Module({controllers:[QuotasController],providers:[QuotasService,PrismaService]}) export class QuotasModule {}
-
+import { Module } from '@nestjs/common'; import { AuthService } from '../auth/auth.service.js'; import { AuthGuard } from '../guards/auth.guard.js'; import { RolesGuard } from '../guards/roles.guard.js'; import { PrismaService } from '../prisma.service.js'; import { QuotasController } from './quotas.controller.js'; import { QuotasService } from './quotas.service.js';
+@Module({controllers:[QuotasController],providers:[QuotasService,PrismaService,AuthService,AuthGuard,RolesGuard]}) export class QuotasModule {}
