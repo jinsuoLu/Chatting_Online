@@ -50,8 +50,11 @@ services:
     restart: unless-stopped
     logging: { driver: json-file, options: { max-size: 10m, max-file: "5" } }
   web:
-    build: { context: ., dockerfile: deploy/web.Dockerfile }
-    environment: { NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-https://localhost/api/v1} }
+    build:
+      context: .
+      dockerfile: deploy/web.Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:?set NEXT_PUBLIC_API_BASE_URL}
     expose: ["3000"]
     depends_on: [api]
     restart: unless-stopped
