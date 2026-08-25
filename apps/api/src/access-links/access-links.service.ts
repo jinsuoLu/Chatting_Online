@@ -14,7 +14,8 @@ export class AccessLinksService {
   hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
   private joinUrl(token: string) {
     const origin = (process.env.PUBLIC_APP_URL ?? 'https://example.com').replace(/\/$/, '');
-    if (!origin.startsWith('https://')) throw new Error('PUBLIC_APP_URL must use HTTPS');
+    const insecureHttpAllowed = process.env.ALLOW_INSECURE_HTTP === 'true';
+    if (!origin.startsWith('https://') && !(insecureHttpAllowed && origin.startsWith('http://'))) throw new Error('PUBLIC_APP_URL must use HTTPS unless ALLOW_INSECURE_HTTP=true');
     return `${origin}/join/${token}`;
   }
   private publicLink(link: any) {

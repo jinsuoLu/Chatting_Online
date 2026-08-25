@@ -104,6 +104,7 @@ services:
       dockerfile: deploy/web.Dockerfile
       args:
         NEXT_PUBLIC_API_BASE_URL: "${NEXT_PUBLIC_API_BASE_URL:?set NEXT_PUBLIC_API_BASE_URL}"
+        NEXT_PUBLIC_SOCKET_URL: "${NEXT_PUBLIC_SOCKET_URL:?set NEXT_PUBLIC_SOCKET_URL}"
     expose:
       - "3000"
     depends_on:
@@ -113,7 +114,7 @@ services:
   caddy:
     image: caddy:2-alpine
     environment:
-      DOMAIN: "${DOMAIN:?set DOMAIN}"
+      CADDY_SITE: "${CADDY_SITE:?set CADDY_SITE}"
     ports:
       - "80:80"
       - "443:443"
