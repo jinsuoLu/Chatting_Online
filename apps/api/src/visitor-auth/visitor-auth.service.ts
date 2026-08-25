@@ -1,8 +1,25 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common'; import { createHash, randomUUID } from 'node:crypto'; import { AccessLinksService } from '../access-links/access-links.service';
-@Injectable() export class VisitorAuthService {
- private active=new Map<string,number>(); private locks=new Map<string,Promise<void>>();
- constructor(private readonly links:AccessLinksService){}
- async validate(token:string){ const l=this.links.findByToken(token); const hash=createHash('sha256').update(token).digest('hex'); if(!l){this.links.recordAttempt(hash,null,false,'INVALID_TOKEN');throw new UnauthorizedException('ACCESS_LINK_INVALID');} const room=this.links.rooms.get(l.roomId); const fail=(reason:string):never=>{this.links.recordAttempt(hash,l.roomId,false,reason);throw new UnauthorizedException('ACCESS_LINK_INVALID');}; if(l.revokedAt||l.status==='REVOKED') return fail('REVOKED'); if(l.expiresAt<=new Date()||l.status==='EXPIRED'){l.status='EXPIRED';return fail('EXPIRED');} if(!room||room.deletedAt||room.status!=='ACTIVE') return fail('ROOM_UNAVAILABLE'); if(l.maxUses!==null&&l.usedCount>=l.maxUses)return fail('MAX_USES'); const online=this.active.get(room.id)??0; if(online>=room.maxVisitors)return fail('ROOM_FULL'); this.links.recordAttempt(hash,l.roomId,true,'VALID'); return {link:l,room}; }
- async createSession(token:string,displayName:string){ const v=await this.validate(token); const key=v.link.id; const previous=this.locks.get(key)??Promise.resolve(); let release!:()=>void; const current=new Promise<void>(r=>release=r); this.locks.set(key,previous.then(()=>current)); await previous; try { if(v.link.maxUses!==null&&v.link.usedCount>=v.link.maxUses) throw new UnauthorizedException('ACCESS_LINK_INVALID'); v.link.usedCount++; v.link.lastUsedAt=new Date(); this.active.set(v.room.id,(this.active.get(v.room.id)??0)+1); return {id:randomUUID(),roomId:v.room.id,accessLinkId:v.link.id,displayName,expiresAt:v.link.expiresAt.toISOString()}; } finally {release(); if(this.locks.get(key)===current)this.locks.delete(key);} }
- cleanup(){this.active.clear(); return true;}
+import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { createHash, randomBytes } from 'node:crypto';
+import { AccessLinksService } from '../access-links/access-links.service.js';
+import { DatabaseService } from '../health/database.service.js';
+
+const SESSION_LIFETIME_MS = 4 * 60 * 60 * 1000;
+@Injectable()
+export class VisitorAuthService {
+  constructor(private readonly links: AccessLinksService, private readonly database: DatabaseService) {}
+  private hash(value: string) { return createHash('sha256').update(value).digest('hex'); }
+  async validate(token: string) {
+    const { link, room } = await this.links.validate(token);
+    return { expiresAt: link.expiresAt.toISOString(), room: { id: room.id, name: room.name } };
+  }
+  async createSession(token: string, displayName: string) {
+    const nickname = displayName.trim();
+    if (!nickname || nickname.length > 80) throw new UnauthorizedException('ACCESS_LINK_INVALID');
+    const link = await this.links.consume(token);
+    const sessionToken = randomBytes(32).toString('base64url');
+    const expiresAt = new Date(Math.min(link.expiresAt.getTime(), Date.now() + SESSION_LIFETIME_MS));
+    const session = await this.database.visitorSession.create({ data: { roomId: link.roomId, accessLinkId: link.id, displayName: nickname, sessionTokenHash: this.hash(sessionToken), expiresAt } });
+    await this.database.auditLog.create({ data: { action: 'VISITOR_SESSION_CREATED', resourceType: 'RoomAccessLink', resourceId: link.id, actorVisitorSessionId: session.id } }).catch(() => undefined);
+    return { id: session.id, roomId: link.roomId, displayName: nickname, sessionToken, expiresAt: expiresAt.toISOString() };
+  }
 }
