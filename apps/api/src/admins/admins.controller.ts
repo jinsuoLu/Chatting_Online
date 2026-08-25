@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
 import { UserRole, UserStatus } from '@prisma/client';
 import { AuthService } from '../auth/auth.service.js';
 import { CurrentUser } from '../decorators/current-user.decorator.js';
@@ -40,3 +40,4 @@ export class AdminsController {
     return value;
   }
 }
+

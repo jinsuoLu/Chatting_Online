@@ -53,10 +53,22 @@ export interface Room {
   id: Uuid;
   adminId: Uuid;
   name: string;
+  description: string | null;
   status: RoomStatus;
+  maxVisitors: number;
   expiresAt: UtcDateTime | null;
   closedAt: UtcDateTime | null;
   deletedAt: UtcDateTime | null;
+  createdAt: UtcDateTime;
+  updatedAt: UtcDateTime;
+}
+
+export interface BatchJob {
+  id: Uuid;
+  status: 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED';
+  requested: number;
+  completed: number;
+  failed: number;
   createdAt: UtcDateTime;
   updatedAt: UtcDateTime;
 }
@@ -147,3 +159,4 @@ export interface ApiErrorResponse {
 
 
 export enum VisitorSessionStatus { ACTIVE = 'ACTIVE', DISCONNECTED = 'DISCONNECTED', EXPIRED = 'EXPIRED', REVOKED = 'REVOKED' }
+

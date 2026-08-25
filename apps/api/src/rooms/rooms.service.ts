@@ -69,7 +69,9 @@ export class RoomsService {
 
   getBatchJob(actor: Actor, id: string) {
     if (actor.role !== 'ADMIN' && actor.role !== 'SUPER_ADMIN') throw new ForbiddenException();
-    const job = this.batchJobs.get(id);\n    if (actor.role !== 'SUPER_ADMIN' && job.ownerAdminId !== actor.id) throw new ForbiddenException({ code: 'BATCH_JOB_FORBIDDEN', message: 'You cannot access this batch job' });\n    return job;
+    const job = this.batchJobs.get(id);
+    if (actor.role !== 'SUPER_ADMIN' && job.ownerAdminId !== actor.id) throw new ForbiddenException({ code: 'BATCH_JOB_FORBIDDEN', message: 'You cannot access this batch job' });
+    return job;
   }
 
   private async runAsyncBatch(jobId: string, actor: Actor, input: BatchCreateInput) {
@@ -164,4 +166,5 @@ export class RoomsService {
     await tx.auditLog.create({ data: { actorUserId: actor.id, action, resourceType: 'Room', resourceId, metadata } });
   }
 }
+
 
