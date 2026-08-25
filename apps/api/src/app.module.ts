@@ -13,12 +13,11 @@ import { RedisModule } from './redis/redis.module.js';
 import { RoomsModule } from './rooms/rooms.module.js';
 import { SchedulerModule } from './scheduler/scheduler.module.js';
 import { VisitorAuthModule } from './visitor-auth/visitor-auth.module.js';
-import { VisitorsController } from './visitors/visitors.controller.js';
 import { VisitorsService } from './visitors/visitors.service.js';
 
 @Module({
   imports: [HealthModule, RedisModule, AuditModule, SchedulerModule, RoomsModule, QuotasModule, BatchJobsModule, AccessLinksModule, VisitorAuthModule, AuthModule],
-  controllers: [VisitorsController, MessagesController],
+  controllers: [MessagesController],
   providers: [Logger, PrismaService, VisitorsService, MessagesService, RealtimeGateway],
 })
 export class AppModule {}

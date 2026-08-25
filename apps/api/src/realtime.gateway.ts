@@ -79,7 +79,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       const message = await this.messages.create(identity, body.content);
       this.server.to(ROOM_PREFIX + identity.roomId).emit('message:new', message);
       return message;
-    } catch (error) { return this.fail(client, 'MESSAGE_REJECTED', (error as Error).message); }
+    } catch (error) { if ((error as Error).message === 'ROOM_CLOSED') return this.closeRoom(client); return this.fail(client, 'MESSAGE_REJECTED', (error as Error).message); }
   }
 
   @SubscribeMessage('typing:start') typingStart(@ConnectedSocket() client: Socket, @MessageBody() body: { roomId?: string }) { return this.typing(client, body, true); }
