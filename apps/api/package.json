@@ -5,10 +5,10 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "dev": "tsx watch src/main.ts",
-    "start": "node dist/main.js",
+    "start": "node --env-file=../../.env dist/main.js",
     "test": "jest --runInBand",
     "prisma:validate": "prisma validate --schema prisma/schema.prisma",
-    "prisma:migrate": "prisma migrate dev --schema prisma/schema.prisma"
+    "prisma:migrate": "node --env-file=../../.env ./node_modules/prisma/build/index.js migrate deploy --schema prisma/schema.prisma"
   },
   "dependencies": {
     "@chatting/contracts": "workspace:*",
