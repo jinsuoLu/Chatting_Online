@@ -2,7 +2,7 @@ FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
 COPY . .
-RUN pnpm install --frozen-lockfile && pnpm --filter @chatting/api exec prisma generate && pnpm --filter @chatting/api build && pnpm --filter @chatting/worker build
+RUN pnpm install --frozen-lockfile && pnpm --filter @chatting/contracts build && pnpm --filter @chatting/api exec prisma generate && pnpm --filter @chatting/api build && pnpm --filter @chatting/worker build
 FROM node:22-alpine
 RUN corepack enable
 WORKDIR /app
