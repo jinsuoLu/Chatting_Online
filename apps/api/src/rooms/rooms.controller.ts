@@ -1,0 +1,5 @@
+import { Controller, Get, Post, Patch, Delete, Param, Body, Req, UnauthorizedException } from '@nestjs/common';
+import { RoomsService } from './rooms.service.js';
+const actor = (req:any) => { if (!req.user) throw new UnauthorizedException(); return req.user; };
+@Controller('rooms')
+export class RoomsController { constructor(private readonly rooms: RoomsService) {} @Post() create(@Req() r:any,@Body() b:any){return this.rooms.create(actor(r),b)} @Get() list(@Req() r:any){return this.rooms.list(actor(r))} @Get(':id') get(@Req() r:any,@Param('id') id:string){return this.rooms.get(actor(r),id)} @Patch(':id') update(@Req() r:any,@Param('id') id:string,@Body() b:any){return this.rooms.update(actor(r),id,b)} @Post(':id/pause') pause(@Req() r:any,@Param('id') id:string){return this.rooms.pause(actor(r),id)} @Post(':id/resume') resume(@Req() r:any,@Param('id') id:string){return this.rooms.resume(actor(r),id)} @Delete(':id') remove(@Req() r:any,@Param('id') id:string){return this.rooms.remove(actor(r),id)} @Post('batch') batch(@Req() r:any,@Body() b:any){return this.rooms.batch(actor(r),b)} }

@@ -1,0 +1,16 @@
+{
+  "name": "chatting-online",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.5.0",
+  "scripts": {
+    "build": "pnpm -r build",
+    "dev": "pnpm --parallel --filter @chatting/web --filter @chatting/api dev",
+    "test": "pnpm --filter @chatting/api test",
+    "prisma:validate": "pnpm --filter @chatting/api prisma:validate",
+    "prisma:migrate": "pnpm --filter @chatting/api prisma:migrate"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

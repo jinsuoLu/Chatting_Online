@@ -1,4 +1,4 @@
-import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common'; import { createHash, randomUUID } from 'node:crypto'; import { AccessLinksService } from '../access-links/access-links.service.js';
+import { Injectable, UnauthorizedException, ConflictException } from '@nestjs/common'; import { createHash, randomUUID } from 'node:crypto'; import { AccessLinksService } from '../access-links/access-links.service';
 @Injectable() export class VisitorAuthService {
  private active=new Map<string,number>(); private locks=new Map<string,Promise<void>>();
  constructor(private readonly links:AccessLinksService){}
