@@ -1,0 +1,11 @@
+node_modules/
+.next/
+dist/
+coverage/
+.env
+apps/api/prisma/migrations/
+
+backups/
+*.dump
+.env.*.local
+.pnpm-store/
