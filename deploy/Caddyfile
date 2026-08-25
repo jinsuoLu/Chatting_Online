@@ -1,8 +1,14 @@
-{$CADDY_SITE} {
+{$DOMAIN} {
   encode gzip
+
   handle /api/* {
     reverse_proxy api:3001
   }
+
+  handle /socket.io/* {
+    reverse_proxy api:3001
+  }
+
   handle {
     reverse_proxy web:3000
   }
