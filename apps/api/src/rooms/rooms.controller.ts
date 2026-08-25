@@ -1,5 +1,23 @@
-import { Controller, Get, Post, Patch, Delete, Param, Body, Req, UnauthorizedException } from '@nestjs/common';
-import { RoomsService } from './rooms.service.js';
-const actor = (req:any) => { if (!req.user) throw new UnauthorizedException(); return req.user; };
+import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
+import { CurrentUser } from '../decorators/current-user.decorator.js';
+import { Roles } from '../decorators/roles.decorator.js';
+import { AuthGuard } from '../guards/auth.guard.js';
+import { RolesGuard } from '../guards/roles.guard.js';
+import { Actor, BatchCreateInput, CreateRoomInput, RoomsService } from './rooms.service.js';
+
 @Controller('rooms')
-export class RoomsController { constructor(private readonly rooms: RoomsService) {} @Post() create(@Req() r:any,@Body() b:any){return this.rooms.create(actor(r),b)} @Get() list(@Req() r:any){return this.rooms.list(actor(r))} @Get(':id') get(@Req() r:any,@Param('id') id:string){return this.rooms.get(actor(r),id)} @Patch(':id') update(@Req() r:any,@Param('id') id:string,@Body() b:any){return this.rooms.update(actor(r),id,b)} @Post(':id/pause') pause(@Req() r:any,@Param('id') id:string){return this.rooms.pause(actor(r),id)} @Post(':id/resume') resume(@Req() r:any,@Param('id') id:string){return this.rooms.resume(actor(r),id)} @Delete(':id') remove(@Req() r:any,@Param('id') id:string){return this.rooms.remove(actor(r),id)} @Post('batch') batch(@Req() r:any,@Body() b:any){return this.rooms.batch(actor(r),b)} }
+@UseGuards(AuthGuard, RolesGuard)
+@Roles(UserRole.ADMIN, UserRole.SUPER_ADMIN)
+export class RoomsController {
+  constructor(private readonly rooms: RoomsService) {}
+  @Post() create(@CurrentUser() actor: Actor, @Body() body: CreateRoomInput) { return this.rooms.create(actor, body); }
+  @Post('batch') batch(@CurrentUser() actor: Actor, @Body() body: BatchCreateInput) { return this.rooms.batch(actor, body); }
+  @Get('batch/:jobId') batchJob(@CurrentUser() actor: Actor, @Param('jobId') jobId: string) { return this.rooms.getBatchJob(actor, jobId); }
+  @Get() list(@CurrentUser() actor: Actor) { return this.rooms.list(actor); }
+  @Get(':id') get(@CurrentUser() actor: Actor, @Param('id') id: string) { return this.rooms.get(actor, id); }
+  @Patch(':id') update(@CurrentUser() actor: Actor, @Param('id') id: string, @Body() body: Partial<CreateRoomInput>) { return this.rooms.update(actor, id, body); }
+  @Post(':id/pause') pause(@CurrentUser() actor: Actor, @Param('id') id: string) { return this.rooms.pause(actor, id); }
+  @Post(':id/resume') resume(@CurrentUser() actor: Actor, @Param('id') id: string) { return this.rooms.resume(actor, id); }
+  @Delete(':id') remove(@CurrentUser() actor: Actor, @Param('id') id: string) { return this.rooms.remove(actor, id); }
+}
