@@ -2,7 +2,9 @@ FROM node:22-alpine AS build
 RUN corepack enable
 WORKDIR /app
 ARG NEXT_PUBLIC_API_BASE_URL
+ARG NEXT_PUBLIC_SOCKET_URL
 ENV NEXT_PUBLIC_API_BASE_URL=$NEXT_PUBLIC_API_BASE_URL
+ENV NEXT_PUBLIC_SOCKET_URL=$NEXT_PUBLIC_SOCKET_URL
 ENV NODE_OPTIONS=--max-old-space-size=4096
 COPY . .
 RUN pnpm install --frozen-lockfile && pnpm --filter @chatting/web build
