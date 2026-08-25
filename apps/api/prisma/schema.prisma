@@ -42,7 +42,7 @@ enum MessageType {
 model User {
   id String @id @default(uuid()) @db.Uuid
   username String @unique
-  passwordHash String
+  passwordHash String      @default("")
   role UserRole @default(ADMIN)
   status UserStatus @default(ACTIVE)
   lastLoginAt DateTime?
@@ -161,4 +161,5 @@ model DeviceConnection {
   disconnectedAt DateTime?
   visitorSession VisitorSession @relation(fields:[visitorSessionId],references:[id])
 }
+
 

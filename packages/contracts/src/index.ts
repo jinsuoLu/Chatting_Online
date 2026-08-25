@@ -145,3 +145,5 @@ export interface ApiErrorResponse {
 
 
 
+
+export enum VisitorSessionStatus { ACTIVE = 'ACTIVE', DISCONNECTED = 'DISCONNECTED', EXPIRED = 'EXPIRED', REVOKED = 'REVOKED' }
