@@ -21,7 +21,7 @@ services:
       DATABASE_URL: postgresql://${POSTGRES_USER:-chatting}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-chatting_online}?schema=public
       REDIS_URL: redis://redis:6379
       API_PORT: 3001
-      WEB_ORIGIN: ${WEB_ORIGIN:-https://localhost}
+      WEB_ORIGIN: ${WEB_ORIGIN:-https://localhost}`n      PUBLIC_APP_URL: ${PUBLIC_APP_URL:?set PUBLIC_APP_URL}
       APP_VERSION: ${APP_VERSION:-dev}
     depends_on: { postgres: { condition: service_healthy }, redis: { condition: service_healthy } }
     expose: ["3001"]
