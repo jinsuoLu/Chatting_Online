@@ -1,0 +1,164 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  SUPER_ADMIN
+  ADMIN
+  VISITOR
+}
+enum UserStatus {
+  ACTIVE
+  DISABLED
+}
+enum RoomStatus {
+  ACTIVE
+  PAUSED
+  EXPIRED
+  REVOKED
+  DELETED
+}
+enum RoomAccessLinkStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+enum VisitorSessionStatus {
+  ACTIVE
+  DISCONNECTED
+  REVOKED
+  EXPIRED
+}
+enum MessageType {
+  TEXT
+  SYSTEM
+}
+
+model User {
+  id String @id @default(uuid()) @db.Uuid
+  username String @unique
+  passwordHash String
+  role UserRole @default(ADMIN)
+  status UserStatus @default(ACTIVE)
+  lastLoginAt DateTime?
+  email String? @unique
+  displayName String?
+  quota AdminQuota?
+  rooms Room[]
+  accessLinksCreated RoomAccessLink[]
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model AdminQuota {
+  id String @id @default(uuid()) @db.Uuid
+  adminId String @unique @db.Uuid
+  maxRooms Int
+  currentRooms Int @default(0)
+  maxVisitorsPerRoom Int
+  maxLinksPerRoom Int
+  maxBatchCreate Int
+  admin User @relation(fields:[adminId],references:[id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+model Room {
+  id String @id @default(uuid()) @db.Uuid
+  adminId String @db.Uuid
+  name String
+  description String?
+  status RoomStatus @default(ACTIVE)
+  maxVisitors Int
+  expiresAt DateTime?
+  closedAt DateTime?
+  deletedAt DateTime?
+  admin User @relation(fields:[adminId],references:[id])
+  accessLinks RoomAccessLink[]
+  visitorSessions VisitorSession[]
+  messages Message[]
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([adminId,status])
+}
+model RoomAccessLink {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @db.Uuid
+  tokenHash String @unique
+  status RoomAccessLinkStatus @default(ACTIVE)
+  expiresAt DateTime
+  revokedAt DateTime?
+  maxUses Int?
+  usedCount Int @default(0)
+  createdBy String @db.Uuid
+  lastUsedAt DateTime?
+  room Room @relation(fields:[roomId],references:[id])
+  creator User @relation(fields:[createdBy],references:[id])
+  sessions VisitorSession[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([roomId,status])
+  @@index([expiresAt,status])
+}
+model VisitorSession {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @db.Uuid
+  accessLinkId String @db.Uuid
+  displayName String
+  sessionTokenHash String @unique
+  ipHash String?
+  userAgentHash String?
+  joinedAt DateTime @default(now())
+  lastSeenAt DateTime @default(now())
+  disconnectedAt DateTime?
+  status VisitorSessionStatus @default(ACTIVE)
+  expiresAt DateTime
+  revokedAt DateTime?
+  room Room @relation(fields:[roomId],references:[id])
+  accessLink RoomAccessLink @relation(fields:[accessLinkId],references:[id])
+  messages Message[]
+  connections DeviceConnection[]
+  auditLogs AuditLog[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([roomId,status])
+}
+model Message {
+  id String @id @default(uuid()) @db.Uuid
+  roomId String @db.Uuid
+  visitorSessionId String? @db.Uuid
+  type MessageType
+  content String
+  room Room @relation(fields:[roomId],references:[id])
+  visitorSession VisitorSession? @relation(fields:[visitorSessionId],references:[id])
+  createdAt DateTime @default(now())
+  @@index([roomId,createdAt])
+}
+model AuditLog {
+  id String @id @default(uuid()) @db.Uuid
+  actorUserId String? @db.Uuid
+  actorVisitorSessionId String? @db.Uuid
+  action String
+  resourceType String
+  resourceId String? @db.Uuid
+  metadata Json?
+  actorUser User? @relation(fields:[actorUserId],references:[id])
+  actorVisitorSession VisitorSession? @relation(fields:[actorVisitorSessionId],references:[id])
+  room Room? @relation(fields:[resourceId],references:[id])
+  createdAt DateTime @default(now())
+  @@index([resourceType,resourceId])
+}
+model DeviceConnection {
+  id String @id @default(uuid()) @db.Uuid
+  visitorSessionId String @db.Uuid
+  socketId String @unique
+  connectedAt DateTime @default(now())
+  disconnectedAt DateTime?
+  visitorSession VisitorSession @relation(fields:[visitorSessionId],references:[id])
+}
+
