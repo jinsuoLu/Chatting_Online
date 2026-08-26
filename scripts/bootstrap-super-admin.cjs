@@ -1,5 +1,9 @@
-const { PrismaClient, UserRole, UserStatus } = require('@prisma/client');
-const argon2 = require('argon2');
+const { createRequire } = require('node:module');
+const path = require('node:path');
+
+const apiRequire = createRequire(path.join(__dirname, '../apps/api/package.json'));
+const { PrismaClient, UserRole, UserStatus } = apiRequire('@prisma/client');
+const argon2 = apiRequire('argon2');
 
 async function main() {
   const username = process.env.ADMIN_USERNAME?.trim();
