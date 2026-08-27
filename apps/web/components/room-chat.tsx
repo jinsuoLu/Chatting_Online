@@ -88,6 +88,8 @@ export function RoomChat({ roomId }: { roomId: string }) {
       socketRef.current.emit('image:publish', { roomId, messageId: body.id });
     } catch (uploadError) {
       setError(uploadError instanceof Error ? uploadError.message : '图片上传失败');
+    } finally {
+      // Publishing is asynchronous; never leave the composer blocked waiting for a Socket.IO response.
       setUploading(false);
     }
   }
