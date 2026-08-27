@@ -6,6 +6,7 @@ import { BatchJobsModule } from './batch-jobs/batch-jobs.module.js';
 import { HealthModule } from './health/health.module.js';
 import { MessagesController } from './messages/messages.controller.js';
 import { MessagesService } from './messages/messages.service.js';
+import { UploadsController } from './uploads/uploads.controller.js';
 import { PrismaService } from './prisma/prisma.service.js';
 import { QuotasModule } from './quotas/quotas.module.js';
 import { RealtimeGateway } from './realtime.gateway.js';
@@ -17,7 +18,7 @@ import { VisitorsService } from './visitors/visitors.service.js';
 
 @Module({
   imports: [HealthModule, RedisModule, AuditModule, SchedulerModule, RoomsModule, QuotasModule, BatchJobsModule, AccessLinksModule, VisitorAuthModule, AuthModule],
-  controllers: [MessagesController],
+  controllers: [MessagesController, UploadsController],
   providers: [Logger, PrismaService, VisitorsService, MessagesService, RealtimeGateway],
 })
 export class AppModule {}

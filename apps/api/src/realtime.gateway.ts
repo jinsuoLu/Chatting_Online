@@ -82,6 +82,17 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     } catch (error) { if ((error as Error).message === 'ROOM_CLOSED') return this.closeRoom(client); return this.fail(client, 'MESSAGE_REJECTED', (error as Error).message); }
   }
 
+  @SubscribeMessage('image:publish')
+  async publishImage(@ConnectedSocket() client: Socket, @MessageBody() body: { roomId?: string; messageId?: string }) {
+    const identity = this.identity(client);
+    if (this.joinedRooms.get(client.id) !== identity.roomId || body?.roomId !== identity.roomId || typeof body.messageId !== 'string') return this.fail(client, 'ROOM_FORBIDDEN', 'Join your assigned room first');
+    if (!(await this.allowMessage(identity.id))) return this.fail(client, 'RATE_LIMITED', 'Too many messages; try again shortly');
+    try {
+      const message = await this.messages.visitorImage(identity, body.messageId);
+      this.server.to(ROOM_PREFIX + identity.roomId).emit('message:new', message);
+      return message;
+    } catch (error) { if ((error as Error).message === 'ROOM_CLOSED') return this.closeRoom(client); return this.fail(client, 'IMAGE_REJECTED', (error as Error).message); }
+  }
   @SubscribeMessage('typing:start') typingStart(@ConnectedSocket() client: Socket, @MessageBody() body: { roomId?: string }) { return this.typing(client, body, true); }
   @SubscribeMessage('typing:stop') typingStop(@ConnectedSocket() client: Socket, @MessageBody() body: { roomId?: string }) { return this.typing(client, body, false); }
   @SubscribeMessage('room:leave') async leaveRoom(@ConnectedSocket() client: Socket) { const identity = this.identity(client); const roomId = this.joinedRooms.get(client.id); if (roomId) await this.leave(client, identity, roomId, false); }

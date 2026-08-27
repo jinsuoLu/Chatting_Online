@@ -24,6 +24,7 @@ export enum RoomAccessLinkStatus {
 
 export enum MessageType {
   TEXT = 'TEXT',
+  IMAGE = 'IMAGE',
   SYSTEM = 'SYSTEM',
 }
 
@@ -107,6 +108,7 @@ export interface Message {
   visitorSessionId: Uuid | null;
   type: MessageType;
   content: string;
+  imageUrl?: string | null;
   createdAt: UtcDateTime;
 }
 
@@ -159,4 +161,3 @@ export interface ApiErrorResponse {
 
 
 export enum VisitorSessionStatus { ACTIVE = 'ACTIVE', DISCONNECTED = 'DISCONNECTED', EXPIRED = 'EXPIRED', REVOKED = 'REVOKED' }
-
