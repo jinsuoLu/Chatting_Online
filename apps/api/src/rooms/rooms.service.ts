@@ -19,7 +19,16 @@ export class RoomsService {
   }
 
   async list(actor: Actor) {
-    return this.prisma.room.findMany({ where: actor.role === 'SUPER_ADMIN' ? {} : { adminId: actor.id }, orderBy: { createdAt: 'desc' } });
+    const now = new Date();
+    return this.prisma.room.findMany({
+      where: {
+        ...(actor.role === 'SUPER_ADMIN' ? {} : { adminId: actor.id }),
+        deletedAt: null,
+        status: { notIn: ['DELETED', 'EXPIRED'] },
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
+      orderBy: { createdAt: 'desc' },
+    });
   }
 
   async get(actor: Actor, id: string) {
@@ -166,5 +175,3 @@ export class RoomsService {
     await tx.auditLog.create({ data: { actorUserId: actor.id, action, resourceType: 'Room', resourceId, metadata } });
   }
 }
-
-

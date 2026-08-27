@@ -4,8 +4,10 @@ import type { Prisma } from '@prisma/client';
 import { DatabaseService } from '../health/database.service.js';
 
 type Actor = { id: string; role?: string };
-type CreateInput = { expiresAt: string | Date; maxUses?: number | null; batch?: number };
+type LinkInput = { expiresAt?: string | Date; durationMinutes?: number; maxUses?: number | null };
+type CreateInput = LinkInput & { batch?: number; links?: LinkInput[] };
 const invalid = () => new UnauthorizedException('ACCESS_LINK_INVALID');
+const MAX_LINK_DURATION_MINUTES = 30 * 24 * 60;
 
 @Injectable()
 export class AccessLinksService {
@@ -24,7 +26,7 @@ export class AccessLinksService {
   }
   private async owner(roomId: string, actor: Actor) {
     const room = await this.database.room.findUnique({ where: { id: roomId } });
-    if (!room || room.deletedAt || room.status === 'DELETED') throw new NotFoundException('ROOM_NOT_FOUND');
+    if (!room || room.deletedAt || room.status === 'DELETED' || room.status === 'EXPIRED' || (room.expiresAt && room.expiresAt <= new Date())) throw new NotFoundException('ROOM_NOT_FOUND');
     if (actor.role !== 'SUPER_ADMIN' && room.adminId !== actor.id) throw new ForbiddenException('FORBIDDEN');
     return room;
   }
@@ -34,15 +36,18 @@ export class AccessLinksService {
 
   async create(roomId: string, actor: Actor, input: CreateInput) {
     const room = await this.owner(roomId, actor);
-    const expiresAt = new Date(input.expiresAt);
-    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) throw new BadRequestException('INVALID_EXPIRY');
-    if (input.maxUses !== undefined && input.maxUses !== null && (!Number.isInteger(input.maxUses) || input.maxUses < 1)) throw new BadRequestException('INVALID_MAX_USES');
-    const count = Math.max(1, Math.min(input.batch ?? 1, 100));
+    const definitions = input.links?.length
+      ? input.links
+      : Array.from({ length: Math.max(1, Math.min(input.batch ?? 1, 100)) }, () => input);
+    if (definitions.length > 100) throw new BadRequestException('TOO_MANY_LINKS');
+
     const result: any[] = [];
-    for (let index = 0; index < count; index += 1) {
+    for (const definition of definitions) {
+      const expiresAt = this.resolveExpiry(room, definition);
+      if (definition.maxUses !== undefined && definition.maxUses !== null && (!Number.isInteger(definition.maxUses) || definition.maxUses < 1)) throw new BadRequestException('INVALID_MAX_USES');
       const rawToken = randomBytes(32).toString('base64url');
-      const link = await this.database.roomAccessLink.create({ data: { roomId: room.id, tokenHash: this.hash(rawToken), expiresAt, maxUses: input.maxUses ?? null, createdBy: actor.id } });
-      await this.audit('ACCESS_LINK_CREATED', link.id, actor.id, { roomId });
+      const link = await this.database.roomAccessLink.create({ data: { roomId: room.id, tokenHash: this.hash(rawToken), expiresAt, maxUses: definition.maxUses ?? null, createdBy: actor.id } });
+      await this.audit('ACCESS_LINK_CREATED', link.id, actor.id, { roomId, durationMinutes: definition.durationMinutes });
       result.push({ ...this.publicLink(link), url: this.joinUrl(rawToken) });
     }
     return result;
@@ -70,7 +75,7 @@ export class AccessLinksService {
     return this.publicLink(updated);
   }
 
-  async rotate(id: string, actor: Actor, input: Omit<CreateInput, 'batch'>) {
+  async rotate(id: string, actor: Actor, input: LinkInput) {
     const link = await this.database.roomAccessLink.findUnique({ where: { id } });
     if (!link) throw new NotFoundException('LINK_NOT_FOUND');
     await this.revoke(id, actor);
@@ -116,6 +121,19 @@ export class AccessLinksService {
   async markExpired(now = new Date()) {
     return this.database.roomAccessLink.updateMany({ where: { status: 'ACTIVE', expiresAt: { lte: now } }, data: { status: 'EXPIRED' } });
   }
+
+  private resolveExpiry(room: { expiresAt?: Date | null }, input: LinkInput) {
+    if (input.durationMinutes !== undefined && input.expiresAt !== undefined) throw new BadRequestException('EXPIRY_MODE_CONFLICT');
+    const expiresAt = input.durationMinutes !== undefined
+      ? this.fromDuration(input.durationMinutes)
+      : new Date(input.expiresAt ?? '');
+    if (!Number.isFinite(expiresAt.getTime()) || expiresAt <= new Date()) throw new BadRequestException('INVALID_EXPIRY');
+    if (room.expiresAt && expiresAt > room.expiresAt) throw new BadRequestException('LINK_EXCEEDS_ROOM_EXPIRY');
+    return expiresAt;
+  }
+
+  private fromDuration(durationMinutes: number) {
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 1 || durationMinutes > MAX_LINK_DURATION_MINUTES) throw new BadRequestException('INVALID_DURATION');
+    return new Date(Date.now() + durationMinutes * 60_000);
+  }
 }
-
-

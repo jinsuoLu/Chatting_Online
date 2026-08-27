@@ -31,6 +31,13 @@ describe('AccessLinksService', () => {
     expect([...links.values()][0]).toHaveProperty('tokenHash');
     expect(Object.keys([...links.values()][0])).not.toContain('token');
   });
+  test('creates several links with independently configured durations', async () => {
+    const { db } = database(); const service = new AccessLinksService(db);
+    const created: any[] = await service.create(room.id, { id: room.adminId }, { links: [{ durationMinutes: 10 }, { durationMinutes: 45 }] });
+    expect(created).toHaveLength(2);
+    expect(created.every(link => link.url.includes('/join/'))).toBe(true);
+    expect(new Date(created[1].expiresAt).getTime()).toBeGreaterThan(new Date(created[0].expiresAt).getTime());
+  });
   test('rejects expired and revoked links with one public error', async () => {
     const { db, links } = database(); const service = new AccessLinksService(db);
     const [expired] = await service.create(room.id, { id: room.adminId }, { expiresAt: new Date(Date.now() - 1) }).catch(() => []);
@@ -46,4 +53,3 @@ describe('AccessLinksService', () => {
     await expect(service.revoke(created.id, { id: 'admin-2' })).rejects.toThrow('FORBIDDEN');
   });
 });
-

@@ -1,1 +1,14 @@
-'use client';import{useEffect,useState}from'react';import{api,Shell,State}from'../ui';export default function P(){const[r,sr]=useState<any[]>([]),[e,se]=useState(''),[l,sl]=useState(true);useEffect(()=>{api('/rooms').then(x=>sr(Array.isArray(x)?x:x.data||[])).catch(x=>se(x.message)).finally(()=>sl(false))},[]);return <Shell title="控制台概览"><div className="stats"><div>当前聊天室<strong>{r.length}</strong></div><div>聊天室上限<strong>—</strong></div><div>剩余可创建<strong>—</strong></div><div>在线访客<strong>—</strong></div></div><section className="panel"><h2>即将过期聊天室</h2><State loading={l} error={e} empty={!l&&!e&&!r.length}/>{r.filter(x=>x.expiresAt).map(x=><p key={x.id}>{x.name}</p>)}</section></Shell>}
+'use client';
+
+import { useEffect, useMemo, useState } from 'react';
+import { api, Shell, State, Stat } from '../ui';
+
+export default function Dashboard() {
+  const [rooms, setRooms] = useState<any[]>([]);
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { api('/rooms').then(value => setRooms(Array.isArray(value) ? value : value.data || [])).catch(reason => setError(reason.message)).finally(() => setLoading(false)); }, []);
+  const expiring = useMemo(() => rooms.filter(room => room.expiresAt).sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime()).slice(0, 5), [rooms]);
+  const paused = rooms.filter(room => room.status === 'PAUSED').length;
+  return <Shell title="运行概览"><div className="stats"><Stat label="可见聊天室" value={loading ? '—' : rooms.length} /><Stat label="运行中" value={loading ? '—' : rooms.length - paused} /><Stat label="已暂停" value={loading ? '—' : paused} /><Stat label="近期到期" value={loading ? '—' : expiring.length} /></div><section className="panel"><div className="panel-heading"><div><p className="section-kicker">LIFECYCLE WATCH</p><h2>即将到期聊天室</h2></div><a className="button secondary" href="/admin/rooms">查看聊天室</a></div><State loading={loading} error={error} empty={!loading && !error && !expiring.length} />{expiring.map(room => <div className="issued-link" key={room.id}><div><b>{room.name}</b><small>到期：{new Date(room.expiresAt).toLocaleString('zh-CN')}</small></div><a className="button secondary" href={`/admin/rooms/${room.id}`}>管理链接</a></div>)}</section></Shell>;
+}
