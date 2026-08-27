@@ -158,7 +158,7 @@ export class RoomsService {
   }
 
   private async lockQuota(tx: any, adminId: string): Promise<Quota | null> {
-    const rows = await tx.$queryRaw<Quota[]>`SELECT "adminId", "maxRooms", "currentRooms", "maxVisitorsPerRoom", "maxLinksPerRoom", "maxBatchCreate" FROM "AdminQuota" WHERE "adminId" = ${adminId} FOR UPDATE`;
+    const rows = await tx.$queryRaw<Quota[]>`SELECT "adminId", "maxRooms", "currentRooms", "maxVisitorsPerRoom", "maxLinksPerRoom", "maxBatchCreate" FROM "AdminQuota" WHERE "adminId" = CAST(${adminId} AS uuid) FOR UPDATE`;
     return rows[0] ?? null;
   }
 
